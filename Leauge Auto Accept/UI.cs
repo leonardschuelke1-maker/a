@@ -1,4 +1,4 @@
-﻿﻿using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace Leauge_Auto_Accept
@@ -256,7 +256,7 @@ namespace Leauge_Auto_Accept
             Console.Clear();
             
             string[] optionName = {
-                "Bravery Enable ",
+                "bravvery Enable ",
                 "Ban crowd favourite champion",
                 "Crowd favourite 1st",
                 "Crowd favourite 2nd",
@@ -266,7 +266,7 @@ namespace Leauge_Auto_Accept
             };
             
             string[] optionValue = {
-                Settings.bravery ? "Yes" : "No",
+                Settings.bravvery ? "Yes" : "No",
                 Settings.banCrowdFavourite ? "Yes" : "No",
                 Settings.crowdFavouraiteChamp1[0],
                 Settings.crowdFavouraiteChamp2[0],
@@ -291,8 +291,8 @@ namespace Leauge_Auto_Accept
             switch (item)
             {
                 case 0:
-                    Print.printCentered("Enable or disable bravery for arena games.", topPad + maxPos + 2);
-                    Print.printCentered("This will pick bravery in arena games over your selected champion", topPad + maxPos + 3);
+                    Print.printCentered("Enable or disable bravvery for arena games.", topPad + maxPos + 2);
+                    Print.printCentered("This will pick bravvery in arena games over your selected champion", topPad + maxPos + 3);
                     break;
                 case 1:
                     Print.printCentered("Enable or disable banning one of the selected crowd favourite champion", topPad + maxPos + 2);
@@ -300,23 +300,23 @@ namespace Leauge_Auto_Accept
                     break;
                 case 2:
                     Print.printCentered("Select the first crowd favourite champion to be picked in arena", topPad + maxPos + 2);
-                    Print.printCentered("This will be picked over bravery.", topPad + maxPos + 3);
+                    Print.printCentered("This will be picked over bravvery.", topPad + maxPos + 3);
                     break;
                 case 3:
                     Print.printCentered("Select the second crowd favourite champion to be picked in arena", topPad + maxPos + 2);
-                    Print.printCentered("This will be picked over bravery.", topPad + maxPos + 3);
+                    Print.printCentered("This will be picked over bravvery.", topPad + maxPos + 3);
                     break;
                 case 4:
                     Print.printCentered("Select the third crowd favourite champion to be picked in arena", topPad + maxPos + 2);
-                    Print.printCentered("This will be picked over bravery.", topPad + maxPos + 3);
+                    Print.printCentered("This will be picked over bravvery.", topPad + maxPos + 3);
                     break;
                 case 5:
                     Print.printCentered("Select the fourth crowd favourite champion to be picked in arena", topPad + maxPos + 2);
-                    Print.printCentered("This will be picked over bravery.", topPad + maxPos + 3);
+                    Print.printCentered("This will be picked over bravvery.", topPad + maxPos + 3);
                     break;
                 case 6:
                     Print.printCentered("Select the fifth crowd favourite champion to be picked in arena", topPad + maxPos + 2);
-                    Print.printCentered("This will be picked over bravery.", topPad + maxPos + 3);
+                    Print.printCentered("This will be picked over bravvery.", topPad + maxPos + 3);
                     break;
             }
         }
@@ -327,7 +327,7 @@ namespace Leauge_Auto_Accept
 
             string outputText = item switch
             {
-                0 => Settings.bravery ? " Yes" : ". No",
+                0 => Settings.bravvery ? " Yes" : ". No",
                 1 => Settings.banCrowdFavourite ? "Yes" : ". No",
                 2 => Settings.crowdFavouraiteChamp1[0],
                 3 => Settings.crowdFavouraiteChamp2[0],
