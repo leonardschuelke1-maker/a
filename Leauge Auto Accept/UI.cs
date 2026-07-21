@@ -256,7 +256,7 @@ namespace Leauge_Auto_Accept
             Console.Clear();
             
             string[] optionName = {
-                "Enable Bravery",
+                "Bravery Enable ",
                 "Ban crowd favourite champion",
                 "Crowd favourite 1st",
                 "Crowd favourite 2nd",
