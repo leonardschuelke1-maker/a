@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -65,28 +65,18 @@ namespace Leauge_Auto_Accept
                                 handlePickOrderSwap();
                                 break;
                             case "InProgress":
-                                // No need to spam requests
-                                // In game
                                 Thread.Sleep(9000);
                                 break;
                             case "WaitingForStats":
-                                // No need to spam requests
-                                // Waiting for stats screen (nice game riot)
                                 Thread.Sleep(9000);
                                 break;
                             case "PreEndOfGame":
-                                // No need to spam requests
-                                // Honor screen
                                 Thread.Sleep(9000);
                                 break;
                             case "EndOfGame":
-                                // No need to spam requests
-                                // End of game stats screen
                                 Thread.Sleep(5000);
                                 break;
                             default:
-                                //Debug.WriteLine(phase);
-                                // TODO: add more special cases?
                                 Thread.Sleep(1000);
                                 break;
                         }
@@ -158,19 +148,15 @@ namespace Leauge_Auto_Accept
             lastPhase = phase;
         }
 
-
         private static void handleChampSelect()
         {
-            // Get data for the current ongoing champ select
             string[] currentChampSelect = LCU.clientRequest("GET", "lol-champ-select/v1/session");
 
             if (currentChampSelect[0] == "200")
             {
-                // Get needed data from the current champ select 
-                string currentChatRoom = currentChampSelect[1].Split("multiUserChatId":"")[1].Split('"')[0];
+                string currentChatRoom = currentChampSelect[1].Split("multiUserChatId\":\"")[1].Split('"')[0];
                 if (lastChatRoom != currentChatRoom || lastChatRoom == "")
                 {
-                    // Reset stuff in case someone dodged the champ select
                     pickedChamp = false;
                     lockedChamp = false;
                     pickedBan = false;
@@ -180,7 +166,7 @@ namespace Leauge_Auto_Accept
                     sentChatMessages = false;
                     champSelectStart = DateTimeOffset.Now.ToUnixTimeMilliseconds();
                     
-                    isArena = currentChampSelect[1].Contains(""queueId":1700");
+                    isArena = currentChampSelect[1].Contains("\"queueId\":1700");
                     crowdFavorite1ChampId = "";
                     crowdFavorite2ChampId = "";
                     crowdFavorite3ChampId = "";
@@ -191,13 +177,11 @@ namespace Leauge_Auto_Accept
 
                 if (pickedChamp && lockedChamp && pickedBan && lockedBan && pickedSpell1 && pickedSpell2 && sentChatMessages)
                 {
-                    // Sleep a little if we already did everything we needed to do
                     Thread.Sleep(1000);
                 }
                 else
                 {
-                    // Get more needed data from the current champ select
-                    string localPlayerCellId = currentChampSelect[1].Split("localPlayerCellId":")[1].Split(',')[0];
+                    string localPlayerCellId = currentChampSelect[1].Split("localPlayerCellId\":")[1].Split(',')[0];
 
                     if (Settings.currentChamp[1] == "0" && !isArena)
                     {
@@ -217,36 +201,25 @@ namespace Leauge_Auto_Accept
                     {
                         pickedSpell2 = true;
                     }
-                    if (!Settings.chatMessagesEnabled)
+                    if (!Settings.chatMessagesEnabled || Settings.chatMessages.Count == 0)
                     {
                         sentChatMessages = true;
-                    }
-                    else
-                    {
-                        if (Settings.chatMessages.Count == 0)
-                        {
-                            sentChatMessages = true;
-                        }
                     }
 
                     if (isArena)
                     {
-                        // Output example:
-                        //[
-                        // 51,
-                        // 23,
-                        // 120,
-                        // 555,
-                        // 111
-                        //]
-                        // It's misspelled in the endpoint as "favorte" instead of "favorite"
+                        // Endpoint mit Typo-Fallback abfragen
                         string[] arenaCrowdFavorites = LCU.clientRequest("GET", "lol-lobby-team-builder/champ-select/v1/crowd-favorte-champion-list");
+                        if (arenaCrowdFavorites[0] != "200")
+                        {
+                            arenaCrowdFavorites = LCU.clientRequest("GET", "lol-lobby-team-builder/champ-select/v1/crowd-favorite-champion-list");
+                        }
+
                         if (arenaCrowdFavorites[0] == "200")
                         {
                             string arenaCrowdFavoritesData = arenaCrowdFavorites[1].Replace("[", "").Replace("]", "").Replace("\n", "").Replace(" ", "");
                             string[] arenaCrowdFavoritesSplit = arenaCrowdFavoritesData.Split(',');
 
-                            // Might be less than 5 champs if the player doesn't own that many champs
                             if (arenaCrowdFavoritesSplit.Length > 0) crowdFavorite1ChampId = arenaCrowdFavoritesSplit[0];
                             if (arenaCrowdFavoritesSplit.Length > 1) crowdFavorite2ChampId = arenaCrowdFavoritesSplit[1];
                             if (arenaCrowdFavoritesSplit.Length > 2) crowdFavorite3ChampId = arenaCrowdFavoritesSplit[2];
@@ -266,35 +239,25 @@ namespace Leauge_Auto_Accept
                     if (!pickedSpell1)
                     {
                         string[] champSelectAction = LCU.clientRequest("PATCH", "lol-champ-select/v1/session/my-selection", "{\"spell1Id\":" + Settings.currentSpell1[1] + "}");
-                        if (champSelectAction[0] == "204")
-                        {
-                            pickedSpell1 = true;
-                        }
+                        if (champSelectAction[0] == "204") pickedSpell1 = true;
                     }
                     if (!pickedSpell2)
                     {
                         string[] champSelectAction = LCU.clientRequest("PATCH", "lol-champ-select/v1/session/my-selection", "{\"spell2Id\":" + Settings.currentSpell2[1] + "}");
-                        if (champSelectAction[0] == "204")
-                        {
-                            pickedSpell2 = true;
-                        }
+                        if (champSelectAction[0] == "204") pickedSpell2 = true;
                     }
                 }
             }
         }
 
-
-        // Check player's assigned position and adjust champion pick to primary (true) or secondary (false)
         private static bool handleChampPositionPreferences(string[] currentChampSelect, string localPlayerCellId)
         {
-            // Check lobby endpoint for position preferences
             string[] lobbySession = LCU.clientRequest("GET", "lol-lobby/v2/lobby");
             if (!lobbySession[1].Contains("firstPositionPreference\":") || !lobbySession[1].Contains("secondPositionPreference\":")) return true;
 
             string firstPositionPreference = lobbySession[1].Split("firstPositionPreference\":")[1].Split(',')[0].Trim('"').ToLower();
             string secondPositionPreference = lobbySession[1].Split("secondPositionPreference\":")[1].Split(',')[0].Trim('"').ToLower();
 
-            // Locate the "myTeam":[{ ... }] block
             int startIndex = currentChampSelect[1].IndexOf("\"myTeam\":[");
             if (startIndex == -1) return true;
 
@@ -303,21 +266,17 @@ namespace Leauge_Auto_Accept
             if (teamDataStart == -1 || teamDataEnd == -1) return true;
             
             string myTeam = currentChampSelect[1].Substring(teamDataStart + 1, teamDataEnd - teamDataStart);
-
-            // Split objects (players) using '{' as a separator
             string[] players = myTeam.Split(new string[] { "{" }, StringSplitOptions.RemoveEmptyEntries);
 
             string assignedPosition = "";
             foreach (var player in players)
             {
-                // Match the cell IDs
                 if (player.Contains("\"cellId\":" + localPlayerCellId + ","))
                 {
                     string[] lines = player.Split(',');
                     foreach (var line in lines)
                     {
-                        // Extract the assigned position
-                        if (line.Contains(""assignedPosition""))
+                        if (line.Contains("\"assignedPosition\""))
                         {
                             string[] parts = line.Split(':');
                             assignedPosition = parts[1].Trim('"');
@@ -332,21 +291,18 @@ namespace Leauge_Auto_Accept
             return true;
         }
 
-
         private static void handleChampSelectChat(string chatId)
         {
             string[] chats = LCU.clientRequest("GET", "lol-chat/v1/conversations", "");
             if (chats[1].Contains(chatId))
             {
                 Data.loadPlayerChatId();
-
                 long currentTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
                 if ((currentTime - Settings.chatMessagesDelay) > champSelectStart)
                 {
                     handleChampSelectChatSendMsg(chatId);
                 }
-
             }
         }
 
@@ -371,7 +327,6 @@ namespace Leauge_Auto_Accept
 
         private static void handleChampSelectActions(string[] currentChampSelect, string localPlayerCellId)
         {
-            // This logic skips modes that aren't draft
             if (!currentChampSelect[1].Contains("actions\":[[{")) return;
 
             string csActs = currentChampSelect[1].Split("actions\":[[{")[1].Split("}]],")[0];
@@ -401,7 +356,6 @@ namespace Leauge_Auto_Accept
 
         private static bool ShouldHoverChampion(string[] currentChampSelect)
         {
-            // Hover champion when champ select starts
             string champSelectPhase = currentChampSelect[1].Split("\"phase\":\"")[1].Split('"')[0];
             long currentTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
             return (currentTime - Settings.pickStartHoverDelay) > champSelectStart
@@ -418,14 +372,13 @@ namespace Leauge_Auto_Accept
 
         private static void handlePickAction(string actId, string championId, string ActIsInProgress, string[] currentChampSelect, bool usePrimaryChamp)
         {
-            // Check if the hover gets cleared (by either a ban or teammate taking it)
             if (championId == "0") pickedChamp = false;
 
             if (!pickedChamp && ShouldHoverChampion(currentChampSelect))
             {
                 if (isArena)
                 {
-                    // 1. Wenn Bravery aktiv ist, wähle den ersten verfügbaren Crowd-Favorite aus
+                    // 1. BRAVERY: Nimm direkt den ersten verfügbaren Champion aus der Riot-Favoritenliste
                     if (Settings.bravery)
                     {
                         string[] crowdFavs = {
@@ -446,10 +399,10 @@ namespace Leauge_Auto_Accept
                         }
                     }
 
-                    // 2. Falls Bravery deaktiviert ist oder fehlschlug: Benutzerdefinierte Favorites versuchen
+                    // 2. MANUELLE FAVORITEN: Nutze diese, wenn Bravery aus ist ODER fehlschlug
                     if (!pickedChamp)
                     {
-                        string[] favorites = {
+                        string[] customFavorites = {
                             Settings.crowdFavouraiteChamp1[1],
                             Settings.crowdFavouraiteChamp2[1],
                             Settings.crowdFavouraiteChamp3[1],
@@ -457,9 +410,9 @@ namespace Leauge_Auto_Accept
                             Settings.crowdFavouraiteChamp5[1]
                         };
 
-                        foreach (var favId in favorites)
+                        foreach (var favId in customFavorites)
                         {
-                            if (!pickedChamp && isInCrowdFavoriteChamps(favId))
+                            if (!pickedChamp && favId != "0" && isInCrowdFavoriteChamps(favId))
                             {
                                 hoverChampion(actId, favId, "pick");
                                 if (pickedChamp) championId = favId;
@@ -467,10 +420,10 @@ namespace Leauge_Auto_Accept
                         }
                     }
 
-                    // In arena mode runes and spells are disabled, so mark them as picked
                     pickedSpell1 = pickedSpell2 = true;
                 }
 
+                // Standard Pick für Draft/Ranked Mode
                 if (!isArena && !pickedChamp && championId != "-3")
                 {
                     string primaryChamp = usePrimaryChamp ? Settings.currentChamp[1] : Settings.secondaryChamp[1];
@@ -478,17 +431,16 @@ namespace Leauge_Auto_Accept
                     string backupChamp = usePrimaryChamp ? Settings.currentBackupChamp[1] : Settings.secondaryBackupChamp[1];
                     string backupRunes = usePrimaryChamp ? Settings.currentBackupChampRunes[1] : Settings.secondaryBackupChampRunes[1];
 
-                    // Try first choice based on player is assigned primary or secondary role
                     hoverChampion(actId, primaryChamp, "pick");
                     handleRunes(primaryRunes);
 
-                    // If first choice didn't work (pickedChamp is still false), try second choice
                     if (!pickedChamp)
                     {
                         hoverChampion(actId, backupChamp, "pick");
                         handleRunes(backupRunes);
                         if (pickedChamp) championId = backupChamp;
-                    } else championId = primaryChamp;
+                    } 
+                    else championId = primaryChamp;
                 }
             }
 
@@ -498,7 +450,8 @@ namespace Leauge_Auto_Accept
 
                 if (!lockedChamp && pickedChamp)
                 {
-                    if (Settings.instaLock) lockChampion(actId, championId, "pick");
+                    // Im Arena-Modus direkt locken, um Timer-Fehler in checkLockDelay zu vermeiden
+                    if (isArena || Settings.instaLock) lockChampion(actId, championId, "pick");
                     else checkLockDelay(actId, championId, currentChampSelect, "pick");
                 }
             }
@@ -506,20 +459,16 @@ namespace Leauge_Auto_Accept
 
         private static void handleBanAction(string actId, string championId, string ActIsInProgress, string[] currentChampSelect)
         {
-            string champSelectPhase = currentChampSelect[1].Split("phase":"")[1].Split('"')[0];
+            string champSelectPhase = currentChampSelect[1].Split("\"phase\":\"")[1].Split('"')[0];
 
-            // make sure it's my turn to pick and that it is not the planning phase anymore
             if (ActIsInProgress == "true" && champSelectPhase != "PLANNING")
             {
-
                 if (!pickedBan)
                 {
-                    // Hover champion when champ select starts
                     long currentTime = DateTimeOffset.Now.ToUnixTimeMilliseconds();
 
-                    if (currentTime - Settings.banStartHoverDelay > champSelectStart) // Check if enough time has passed since planning phase has started
+                    if (currentTime - Settings.banStartHoverDelay > champSelectStart)
                     {
-                        // Ban none if the setting is disabled.
                         bool dontBanCrowd = isArena && Settings.banCrowdFavourite && isInCrowdFavoriteChamps(Settings.currentBan[1]);
                         hoverChampion(actId, dontBanCrowd ? "0" : Settings.currentBan[1], "ban");
                     }
@@ -527,10 +476,10 @@ namespace Leauge_Auto_Accept
 
                 if (!lockedBan)
                 {
-                    // Check the instaBan setting
-                    if (!Settings.instaBan)
+                    if (!Settings.instaBan || isArena)
                     {
-                        checkLockDelay(actId, championId, currentChampSelect, "ban");
+                        if (isArena) lockChampion(actId, championId, "ban");
+                        else checkLockDelay(actId, championId, currentChampSelect, "ban");
                     }
                     else
                     {
@@ -594,25 +543,20 @@ namespace Leauge_Auto_Accept
 
         private static void handlePickOrderSwap()
         {
-            // Return if we already locked in or if the settings is off
             if (!Settings.autoPickOrderTrade || lockedChamp)
             {
                 return;
             }
 
-            // Get ongoing swap data
             string[] swap = LCU.clientRequest("GET", "lol-champ-select/v1/ongoing-swap");
             if (swap[0] == "200")
             {
-                // If the swap was called by local player, return
                 if (swap.Contains("initiatedByLocalPlayer\":true"))
                 {
                     return;
                 }
-                // Get action ID
                 string swapId = swap[1].Split("\"id\":")[1].Split(',')[0];
 
-                // Swap pick order
                 LCU.clientRequest("POST", "lol-champ-select/v1/session/swaps/" + swapId + "/accept");
                 LCU.clientRequest("POST", "lol-champ-select/v1/ongoing-swap/" + swapId + "/clear");
             }
